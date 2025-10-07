@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { apiClient, Product, Store } from "../../lib/api";
 
-export default function BoxesPage() {
+function BoxesContent() {
   const searchParams = useSearchParams();
   const storeId = searchParams.get('storeId');
   
@@ -221,5 +221,44 @@ export default function BoxesPage() {
         </div>
       </nav>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-white pb-20" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {/* Header */}
+      <div className="px-4 pt-4 pb-4 border-b border-gray-100">
+        <div className="flex items-center gap-4">
+          <Link href="/markets" className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl font-bold text-black font-inter">Продукты</h1>
+        </div>
+      </div>
+      
+      {/* Loading skeleton */}
+      <div className="px-4 mt-6">
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="animate-pulse">
+              <div className="bg-gray-200 rounded-2xl aspect-square"></div>
+              <div className="mt-2">
+                <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function BoxesPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <BoxesContent />
+    </Suspense>
   );
 }
