@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import { TelegramProvider } from "../contexts/TelegramProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,7 +37,9 @@ export default function RootLayout({
         className={`${inter.variable} font-sans antialiased bg-[#F5F5F5]`}
         style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
       >
-        {children}
+        <TelegramProvider>
+          {children}
+        </TelegramProvider>
       </body>
     </html>
   );

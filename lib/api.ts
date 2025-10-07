@@ -1,5 +1,5 @@
 // API client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://foodsave.kz/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 // API response types
 export interface ApiResponse<T> {
@@ -302,9 +302,21 @@ class ApiClient {
     notes?: string;
     reservationDateTime?: string;
   }): Promise<Order> {
+    // Transform data to match backend expectations
+    const transformedData = {
+      storeId: orderData.storeId,
+      items: orderData.orderItems, // Rename orderItems to items
+      notes: orderData.notes,
+      reservationDateTime: orderData.reservationDateTime
+    };
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Creating order with data:', transformedData);
+    }
+    
     return this.makeRequest<Order>('/orders', {
       method: 'POST',
-      body: JSON.stringify(orderData),
+      body: JSON.stringify(transformedData),
     });
   }
 }

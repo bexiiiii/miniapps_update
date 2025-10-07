@@ -4,20 +4,16 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useTelegram } from "../../hooks/useTelegram";
 import { apiClient, Store } from "../../lib/api";
 
 export default function MarketsPage() {
   const { t } = useTranslation();
+  const { } = useTelegram(); // Initialize Telegram singleton
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-    }
-
     const loadStores = async () => {
       try {
         const storesData = await apiClient.getActiveStores();

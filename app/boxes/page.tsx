@@ -4,23 +4,19 @@ import { useEffect, useState, Suspense } from "react";
 import { ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useTelegram } from "../../hooks/useTelegram";
 import { apiClient, Product, Store } from "../../lib/api";
 
 function BoxesContent() {
   const searchParams = useSearchParams();
   const storeId = searchParams.get('storeId');
+  const { } = useTelegram(); // Initialize Telegram singleton
   
   const [products, setProducts] = useState<Product[]>([]);
   const [store, setStore] = useState<Store | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-    }
-
     const loadData = async () => {
       if (!storeId) {
         setIsLoading(false);

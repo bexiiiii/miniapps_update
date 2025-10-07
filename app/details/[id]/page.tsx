@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Clock, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTelegram } from "../../../hooks/useTelegram";
 import { apiClient, Product } from "../../../lib/api";
 
 export default function ProductDetailsPage() {
   const params = useParams();
   const productId = params.id as string;
+  const { } = useTelegram(); // Initialize Telegram singleton
   
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -16,12 +18,6 @@ export default function ProductDetailsPage() {
   const [isReserving, setIsReserving] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-    }
-
     const loadProduct = async () => {
       if (!productId) return;
 

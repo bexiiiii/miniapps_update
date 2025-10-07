@@ -4,16 +4,14 @@ import { useEffect } from "react";
 import { ArrowLeft, ChevronRight, User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "../../hooks/useAuth";
+import { useTelegram } from "../../hooks/useTelegram";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { } = useTelegram(); // Initialize Telegram singleton
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-    }
+    // No additional logic needed, Telegram is initialized by hook
   }, []);
 
   const getDisplayName = () => {

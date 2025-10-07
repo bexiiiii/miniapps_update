@@ -5,11 +5,13 @@ import { Bell, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAuth } from "../hooks/useAuth";
+import { useTelegram } from "../hooks/useTelegram";
 import { apiClient, Product, Order, Store } from "../lib/api";
 
 export default function HomePage() {
   const { t } = useTranslation();
   const { user, isLoading: authLoading, login } = useAuth();
+  const { getTelegramUser, getTelegramInitData } = useTelegram();
   const [currentBanner, setCurrentBanner] = useState(0);
   const [latestOrder, setLatestOrder] = useState<Order | null>(null);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -57,27 +59,20 @@ export default function HomePage() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        tg.setHeaderColor("#FFFFFF");
-        tg.setBackgroundColor("#FFFFFF");
+      // Get user name from Telegram
+      const telegramUser = getTelegramUser();
+      if (telegramUser) {
+        const fullName = `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim();
+        setUserName(fullName || telegramUser.username || 'Пользователь');
+      }
 
-        // Get user name from Telegram
-        if (tg.initDataUnsafe?.user) {
-          const telegramUser = tg.initDataUnsafe.user;
-          const fullName = `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim();
-          setUserName(fullName || telegramUser.username || 'Пользователь');
-        }
-
-        // Authenticate user with Telegram
-        if (tg.initData && !authLoading) {
-          try {
-            await login(tg.initData);
-          } catch (error) {
-            console.error('Telegram authentication failed:', error);
-          }
+      // Authenticate user with Telegram
+      const initData = getTelegramInitData();
+      if (initData && !authLoading) {
+        try {
+          await login(initData);
+        } catch (error) {
+          console.error('Telegram authentication failed:', error);
         }
       }
 
@@ -102,7 +97,7 @@ export default function HomePage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [banners.length, authLoading, login]);
+  }, [banners.length, authLoading, login, getTelegramUser, getTelegramInitData]);
 
   // Separate effect for loading user-specific data
   useEffect(() => {
@@ -312,27 +307,4 @@ export default function HomePage() {
       </nav>
     </div>
   );
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: {
-        ready: () => void;
-        expand: () => void;
-        setHeaderColor: (color: string) => void;
-        setBackgroundColor: (color: string) => void;
-        initData: string;
-        initDataUnsafe: {
-          user?: {
-            id: number;
-            first_name?: string;
-            last_name?: string;
-            username?: string;
-            language_code?: string;
-          };
-        };
-      };
-    };
-  }
 }
