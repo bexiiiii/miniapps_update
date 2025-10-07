@@ -17,6 +17,9 @@ export default function ProfilePage() {
   }, []);
 
   const getDisplayName = () => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('User data in profile:', user);
+    }
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }

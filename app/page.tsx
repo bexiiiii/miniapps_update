@@ -108,8 +108,14 @@ export default function HomePage() {
   useEffect(() => {
     const loadUserData = async () => {
       if (user && !authLoading) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Loading user data for user:', user);
+        }
         try {
           const orders = await apiClient.getMyOrders();
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Orders loaded:', orders);
+          }
           if (orders.length > 0) {
             setLatestOrder(orders[0]); // Most recent order
           }

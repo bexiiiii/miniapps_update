@@ -69,32 +69,11 @@ function BoxesContent() {
       {/* Store Info */}
       {store && (
         <div className="px-4 mt-6">
-          <div className="bg-gray-100 rounded-2xl p-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-[#73be61] rounded-full flex items-center justify-center flex-shrink-0">
-                {store.logoUrl ? (
-                  <img 
-                    src={store.logoUrl}
-                    alt={store.name}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-white font-bold text-lg font-inter">
-                    {store.name.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-black font-inter mb-1">{store.name}</h2>
-                <div className="flex items-center gap-2 text-sm text-black/60 font-inter">
-                  <Clock className="w-4 h-4" />
-                  <span>{formatOpeningHours(store.openingHours)}</span>
-                </div>
-                {store.address && (
-                  <p className="text-sm text-black/50 font-inter mt-1">{store.address}</p>
-                )}
-              </div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-black font-inter">{store.name}</h2>
+            <div className="flex items-center gap-2 text-sm text-black/60 font-inter">
+              <Clock className="w-4 h-4" />
+              <span>{formatOpeningHours(store.openingHours)}</span>
             </div>
           </div>
         </div>

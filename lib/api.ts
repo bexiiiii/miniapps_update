@@ -1,5 +1,5 @@
 // API client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://foodsave.kz/api';
 
 // API response types
 export interface ApiResponse<T> {
@@ -118,8 +118,9 @@ export interface OrderItem {
 
 // Authentication types
 export interface AuthResponse {
-  token: string;
-  refreshToken: string;
+  token?: string;
+  accessToken?: string;
+  refreshToken?: string;
   user: User;
 }
 
@@ -137,6 +138,13 @@ class ApiClient {
     // Try to get token from localStorage if available
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('authToken');
+      if (process.env.NODE_ENV === 'development') {
+        if (this.token) {
+          console.log('Token loaded from localStorage:', this.token.substring(0, 20) + '...');
+        } else {
+          console.log('No token found in localStorage');
+        }
+      }
     }
   }
 
@@ -144,6 +152,9 @@ class ApiClient {
     this.token = token;
     if (typeof window !== 'undefined') {
       localStorage.setItem('authToken', token);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Token saved:', token.substring(0, 20) + '...');
+      }
     }
   }
 
@@ -166,7 +177,48 @@ class ApiClient {
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Making request with token:', this.token.substring(0, 20) + '...');
+      }
+    } else if (process.env.NODE_ENV === 'development') {
+      console.log('Making request without token');
     }
+
+    const config: RequestInit = {
+      ...options,
+      headers,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        // Handle 401 Unauthorized - clear tokens
+        if (response.status === 401) {
+          console.warn('Authentication failed - clearing tokens');
+          this.clearToken();
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Helper method for public requests (no auth required)
+  private async makePublicRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
 
     const config: RequestInit = {
       ...options,
@@ -180,10 +232,9 @@ class ApiClient {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      return data;
+      return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('Public API request failed:', error);
       throw error;
     }
   }
@@ -195,7 +246,11 @@ class ApiClient {
       body: JSON.stringify({ initData }),
     });
     
-    this.setToken(response.token);
+    // Server returns 'accessToken', not 'token'
+    const token = response.accessToken || response.token;
+    if (token) {
+      this.setToken(token);
+    }
     return response;
   }
 
@@ -205,28 +260,28 @@ class ApiClient {
 
   // Store methods
   async getActiveStores(): Promise<Store[]> {
-    return this.makeRequest<Store[]>('/stores/active');
+    return this.makePublicRequest<Store[]>('/stores/active');
   }
 
   async getStoreById(id: number): Promise<Store> {
-    return this.makeRequest<Store>(`/stores/${id}`);
+    return this.makePublicRequest<Store>(`/stores/${id}`);
   }
 
   // Product methods
   async getAllProducts(page = 0, size = 20): Promise<PaginationResponse<Product>> {
-    return this.makeRequest<PaginationResponse<Product>>(`/products?page=${page}&size=${size}`);
+    return this.makePublicRequest<PaginationResponse<Product>>(`/products?page=${page}&size=${size}`);
   }
 
   async getProductsByStore(storeId: number, page = 0, size = 20): Promise<PaginationResponse<Product>> {
-    return this.makeRequest<PaginationResponse<Product>>(`/products/store/${storeId}?page=${page}&size=${size}`);
+    return this.makePublicRequest<PaginationResponse<Product>>(`/products/store/${storeId}?page=${page}&size=${size}`);
   }
 
   async getProductById(id: number): Promise<Product> {
-    return this.makeRequest<Product>(`/products/${id}`);
+    return this.makePublicRequest<Product>(`/products/${id}`);
   }
 
   async getFeaturedProducts(page = 0, size = 20): Promise<PaginationResponse<Product>> {
-    return this.makeRequest<PaginationResponse<Product>>(`/products/featured?page=${page}&size=${size}`);
+    return this.makePublicRequest<PaginationResponse<Product>>(`/products/featured?page=${page}&size=${size}`);
   }
 
   // Order methods

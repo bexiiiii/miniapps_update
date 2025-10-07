@@ -21,9 +21,12 @@ export const useAuth = (): UseAuthReturn => {
           const currentUser = await apiClient.getCurrentUser();
           setUser(currentUser);
           setIsLoggedIn(true);
+          console.log('User loaded from token:', currentUser);
         } catch (error) {
           console.error('Failed to get current user:', error);
+          // Token might be invalid, clear everything
           apiClient.clearToken();
+          setUser(null);
           setIsLoggedIn(false);
         }
       }
