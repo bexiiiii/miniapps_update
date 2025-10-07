@@ -58,17 +58,23 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
+    let isMounted = true;
+    let initializationStarted = false;
+
     const initializeApp = async () => {
+      if (initializationStarted) return; // Prevent multiple simultaneous initializations
+      initializationStarted = true;
+
       // Get user name from Telegram
       const telegramUser = getTelegramUser();
-      if (telegramUser) {
+      if (telegramUser && isMounted) {
         const fullName = `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim();
         setUserName(fullName || telegramUser.username || 'Пользователь');
       }
 
       // Authenticate user with Telegram
       const initData = getTelegramInitData();
-      if (initData && !authLoading) {
+      if (initData && !authLoading && isMounted) {
         try {
           await login(initData);
         } catch (error) {
@@ -77,20 +83,30 @@ export default function HomePage() {
       }
 
       // Load public data (no authentication required)
-      try {
-        const productsResponse = await apiClient.getFeaturedProducts(0, 5);
-        setFeaturedProducts(productsResponse.content);
-      } catch (error) {
-        console.error('Failed to load featured products:', error);
-      } finally {
-        setIsLoading(false);
+      if (isMounted) {
+        try {
+          const productsResponse = await apiClient.getFeaturedProducts(0, 5);
+          if (isMounted) {
+            setFeaturedProducts(productsResponse.content);
+          }
+        } catch (error) {
+          console.error('Failed to load featured products:', error);
+        } finally {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        }
       }
     };
 
     if (!authLoading) {
       initializeApp();
     }
-  }, [authLoading]); // Only depend on authLoading
+
+    return () => {
+      isMounted = false; // Cleanup to prevent state updates after unmount
+    };
+  }, [authLoading, getTelegramUser, getTelegramInitData, login]); // Include stable dependencies
 
   // Separate effect for banner auto-scroll
   useEffect(() => {
@@ -103,26 +119,34 @@ export default function HomePage() {
 
   // Separate effect for loading user-specific data
   useEffect(() => {
+    let isMounted = true;
+    let loadingStarted = false;
+
     const loadUserData = async () => {
-      if (user && !authLoading) {
+      if (!user || authLoading || loadingStarted) return;
+      loadingStarted = true;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Loading user data for user:', user);
+      }
+      try {
+        const orders = await apiClient.getMyOrders();
         if (process.env.NODE_ENV === 'development') {
-          console.log('Loading user data for user:', user);
+          console.log('Orders loaded:', orders);
         }
-        try {
-          const orders = await apiClient.getMyOrders();
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Orders loaded:', orders);
-          }
-          if (orders.length > 0) {
-            setLatestOrder(orders[0]); // Most recent order
-          }
-        } catch (error) {
-          console.error('Failed to load user orders:', error);
+        if (orders.length > 0 && isMounted) {
+          setLatestOrder(orders[0]); // Most recent order
         }
+      } catch (error) {
+        console.error('Failed to load user orders:', error);
       }
     };
 
     loadUserData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user, authLoading]);
 
   return (

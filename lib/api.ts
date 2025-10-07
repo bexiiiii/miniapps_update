@@ -132,19 +132,13 @@ export interface TelegramAuthRequest {
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
+  private activeRequests = new Map<string, Promise<any>>(); // Cache for preventing duplicate requests
 
   constructor() {
     this.baseURL = API_BASE_URL;
-    // Try to get token from localStorage if available
+    // Load token from localStorage on client side
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('authToken');
-      if (process.env.NODE_ENV === 'development') {
-        if (this.token) {
-          console.log('Token loaded from localStorage:', this.token.substring(0, 20) + '...');
-        } else {
-          console.log('No token found in localStorage');
-        }
-      }
     }
   }
 
@@ -169,6 +163,14 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    // Create a unique key for this request
+    const requestKey = `${options.method || 'GET'}:${endpoint}:${JSON.stringify(options.body || '')}`;
+    
+    // If the same request is already in progress, return the existing promise
+    if (this.activeRequests.has(requestKey)) {
+      return this.activeRequests.get(requestKey);
+    }
+
     const url = `${this.baseURL}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -189,24 +191,34 @@ class ApiClient {
       headers,
     };
 
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        // Handle 401 Unauthorized - clear tokens
-        if (response.status === 401) {
-          console.warn('Authentication failed - clearing tokens');
-          this.clearToken();
+    const requestPromise = (async () => {
+      try {
+        const response = await fetch(url, config);
+        
+        if (!response.ok) {
+          // Handle 401 Unauthorized - clear tokens
+          if (response.status === 401) {
+            console.warn('Authentication failed - clearing tokens');
+            this.clearToken();
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
-    }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+      } finally {
+        // Remove from active requests when done
+        this.activeRequests.delete(requestKey);
+      }
+    })();
+
+    // Store the promise to prevent duplicate requests
+    this.activeRequests.set(requestKey, requestPromise);
+    
+    return requestPromise;
   }
 
   // Helper method for public requests (no auth required)

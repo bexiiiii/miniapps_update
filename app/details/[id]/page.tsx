@@ -18,24 +18,47 @@ export default function ProductDetailsPage() {
   const [isReserving, setIsReserving] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    let loadingStarted = false;
+
     const loadProduct = async () => {
-      if (!productId) return;
+      if (!productId || loadingStarted) return;
+      loadingStarted = true;
 
       try {
         const productData = await apiClient.getProductById(Number(productId));
-        setProduct(productData);
+        if (isMounted) {
+          setProduct(productData);
+        }
       } catch (error) {
         console.error('Failed to load product:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadProduct();
+
+    return () => {
+      isMounted = false;
+    };
   }, [productId]);
 
   const handleReserve = async () => {
-    if (!product || isReserving) return;
+    if (!product) {
+      return;
+    }
+
+    if (product.status !== 'AVAILABLE' || product.stockQuantity === 0) {
+      console.error('Product unavailable');
+      return;
+    }
+
+    if (isReserving) {
+      return; // Prevent multiple simultaneous reservations
+    }
 
     setIsReserving(true);
     try {
@@ -51,13 +74,30 @@ export default function ProductDetailsPage() {
 
       const order = await apiClient.createReservation(reservationData);
       
-      // Show success message or redirect
+      // Show success message
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         console.log(`Заказ успешно создан! Номер заказа: ${order.id}`);
       }
+
+      // Update local product state to reflect new stock
+      setProduct((prev) => {
+        if (!prev) return prev;
+        const remaining = Math.max(prev.stockQuantity - quantity, 0);
+        return {
+          ...prev,
+          stockQuantity: remaining,
+          status: remaining > 0 ? prev.status : 'OUT_OF_STOCK',
+        };
+      });
       
-      // Redirect to orders page
-      window.location.href = '/orders';
+      // Reset quantity
+      setQuantity(1);
+      
+      // Redirect to orders page after a brief delay
+      setTimeout(() => {
+        window.location.href = '/orders';
+      }, 500);
+      
     } catch (error) {
       console.error('Failed to create reservation:', error);
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {

@@ -17,28 +17,44 @@ function BoxesContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    let loadingStarted = false;
+
     const loadData = async () => {
-      if (!storeId) {
-        setIsLoading(false);
+      if (!storeId || loadingStarted) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
         return;
       }
+      loadingStarted = true;
 
       try {
         // Load store info
         const storeData = await apiClient.getStoreById(Number(storeId));
-        setStore(storeData);
+        if (isMounted) {
+          setStore(storeData);
+        }
 
         // Load products for this store
         const productsResponse = await apiClient.getProductsByStore(Number(storeId), 0, 20);
-        setProducts(productsResponse.content);
+        if (isMounted) {
+          setProducts(productsResponse.content);
+        }
       } catch (error) {
         console.error('Failed to load data:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [storeId]);
 
   const formatPrice = (price: number) => {
