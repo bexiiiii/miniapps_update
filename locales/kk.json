@@ -23,5 +23,7 @@
   "rozybakyeva": "Розыбакиев 247",
   "coffeeAndMore": "Coffee & More",
   "nazarbayeva": "Назарбаев 123",
-  "orders": "Тапсырыстар"
+  "orders": "Тапсырыстар",
+  "noOrders": "Тапсырыстар жоқ",
+  "makeFirstOrder": "Алғашқы тапсырыс жасаңыз"
 }

@@ -81,21 +81,12 @@ export default function HomePage() {
         }
       }
 
-      // Load data
+      // Load public data (no authentication required)
       try {
-        // Get featured products (latest added products)
         const productsResponse = await apiClient.getFeaturedProducts(0, 5);
         setFeaturedProducts(productsResponse.content);
-
-        // Get latest order if user is authenticated
-        if (user) {
-          const orders = await apiClient.getMyOrders();
-          if (orders.length > 0) {
-            setLatestOrder(orders[0]); // Most recent order
-          }
-        }
       } catch (error) {
-        console.error('Failed to load data:', error);
+        console.error('Failed to load featured products:', error);
       } finally {
         setIsLoading(false);
       }
@@ -111,7 +102,25 @@ export default function HomePage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [banners.length, authLoading, user]);
+  }, [banners.length, authLoading, login]);
+
+  // Separate effect for loading user-specific data
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (user && !authLoading) {
+        try {
+          const orders = await apiClient.getMyOrders();
+          if (orders.length > 0) {
+            setLatestOrder(orders[0]); // Most recent order
+          }
+        } catch (error) {
+          console.error('Failed to load user orders:', error);
+        }
+      }
+    };
+
+    loadUserData();
+  }, [user, authLoading]);
 
   return (
     <div className="min-h-screen bg-white pb-20" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -173,19 +182,36 @@ export default function HomePage() {
       {/* My Orders */}
       <div className="px-4 mt-8">
         <div className="bg-gray-100 rounded-2xl p-5 relative">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-black/50 text-base font-medium font-inter">{t("myOrders")}</p>
-            {latestOrder && (
-              <div className="bg-[#73be61] rounded-2xl px-4 py-1">
-                <span className="text-white text-sm font-medium font-inter">
-                  {t("reserved")}
-                </span>
+          <p className="text-black/50 text-base font-medium font-inter">{t("myOrders")}</p>
+          
+          {isLoading ? (
+            <div className="mt-4">
+              <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded mt-2 w-1/2 animate-pulse"></div>
+            </div>
+          ) : latestOrder ? (
+            <div className="mt-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-black font-inter">
+                  {latestOrder.storeName}
+                </h3>
+                <div className="bg-[#73be61] rounded-2xl px-4 py-1">
+                  <span className="text-white text-sm font-medium font-inter">
+                    {latestOrder.status === 'CONFIRMED' ? t("reserved") : latestOrder.status}
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
-          <h3 className="text-xl font-semibold text-black font-inter mt-2">
-            {latestOrder ? latestOrder.storeName : t("burgerFastFood")}
-          </h3>
+              <p className="text-sm text-black/60 font-inter mt-1">
+                {new Date(latestOrder.createdAt).toLocaleDateString()} • {latestOrder.totalAmount}₸
+              </p>
+            </div>
+          ) : (
+            <div className="mt-2">
+              <h3 className="text-lg text-black/60 font-inter">{t("noOrders")}</h3>
+              <p className="text-sm text-black/40 font-inter mt-1">{t("makeFirstOrder")}</p>
+            </div>
+          )}
+          
           <Link href="/orders" className="absolute bottom-4 right-5 text-xs text-black/50 font-inter">
             {t("allOrders")}
           </Link>

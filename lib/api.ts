@@ -1,5 +1,5 @@
 // API client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 // API response types
 export interface ApiResponse<T> {
@@ -25,12 +25,22 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  telegramUserId?: string;
+  telegramUserId?: string | number;
   telegramUsername?: string;
+  telegramPhotoUrl?: string;
+  telegramLanguageCode?: string;
+  telegramRegisteredAt?: string;
+  telegramUser?: boolean;
   role: string;
   phoneNumber?: string;
-  isEmailVerified: boolean;
-  isActive: boolean;
+  phone?: string;
+  isEmailVerified?: boolean;
+  isActive?: boolean;
+  active?: boolean;
+  address?: string;
+  password?: string;
+  profilePicture?: string;
+  registrationSource?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,17 +49,26 @@ export interface Store {
   id: number;
   name: string;
   description?: string;
+  logo?: string;
   logoUrl?: string;
   address: string;
   latitude?: number;
   longitude?: number;
+  phone?: string;
   phoneNumber?: string;
   email?: string;
   openingHours?: string;
+  closingHours?: string;
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL';
   category?: string;
   rating?: number;
   ownerId: number;
+  managerId?: number;
+  managerName?: string;
+  ownerName?: string;
+  productCount?: number;
+  active?: boolean;
+  coverImage?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -32,9 +32,14 @@ export default function MarketsPage() {
     loadStores();
   }, []);
 
-  const formatOpeningHours = (hours: string | undefined) => {
-    if (!hours) return "9:00 - 22:00";
-    return hours;
+  const formatOpeningHours = (store: Store) => {
+    if (store.openingHours && store.closingHours) {
+      return `${store.openingHours} - ${store.closingHours}`;
+    }
+    if (store.openingHours) {
+      return `${store.openingHours} - 22:00`;
+    }
+    return "9:00 - 22:00";
   };
 
   return (
@@ -75,10 +80,10 @@ export default function MarketsPage() {
               >
                 <div className="flex items-center gap-4">
                   {/* Store Logo */}
-                  <div className="w-16 h-16 bg-[#73be61] rounded-full flex items-center justify-center flex-shrink-0">
-                    {store.logoUrl ? (
+                  <div className="w-16 h-16 bg-[#73be61] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {store.logo ? (
                       <img 
-                        src={store.logoUrl}
+                        src={store.logo}
                         alt={store.name}
                         className="w-16 h-16 rounded-full object-cover"
                       />
@@ -96,7 +101,7 @@ export default function MarketsPage() {
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-black/60 font-inter">
                       <Clock className="w-4 h-4" />
-                      <span>{formatOpeningHours(store.openingHours)}</span>
+                      <span>{formatOpeningHours(store)}</span>
                     </div>
                     {store.address && (
                       <p className="text-xs text-black/50 font-inter mt-1 truncate">

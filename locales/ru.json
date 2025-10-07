@@ -23,5 +23,7 @@
   "rozybakyeva": "Розыбакиева 247",
   "coffeeAndMore": "Coffee & More",
   "nazarbayeva": "Назарбаева 123",
-  "orders": "Заказы"
+  "orders": "Заказы",
+  "noOrders": "Нет заказов",
+  "makeFirstOrder": "Сделайте первый заказ"
 }

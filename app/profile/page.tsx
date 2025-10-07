@@ -53,15 +53,23 @@ export default function ProfilePage() {
 
       {/* Profile Avatar & Info */}
       <div className="flex flex-col items-center mt-8">
-        <div className="w-20 h-20 bg-[#73be61] rounded-full flex items-center justify-center">
-          <User className="w-10 h-10 text-white" strokeWidth={2} />
+        <div className="w-20 h-20 bg-[#73be61] rounded-full flex items-center justify-center overflow-hidden">
+          {user?.telegramPhotoUrl ? (
+            <img 
+              src={user.telegramPhotoUrl}
+              alt="Profile"
+              className="w-20 h-20 rounded-full object-cover"
+            />
+          ) : (
+            <User className="w-10 h-10 text-white" strokeWidth={2} />
+          )}
         </div>
         
         <h2 className="text-2xl font-bold text-black mt-6 font-inter">{getDisplayName()}</h2>
         {getUsername() && (
           <p className="text-sm font-medium text-black/50 mt-1 font-inter">{getUsername()}</p>
         )}
-        {user?.email && (
+        {user?.email && !user.email.includes('@telegram.local') && (
           <p className="text-sm font-medium text-black/50 mt-1 font-inter">{user.email}</p>
         )}
       </div>
