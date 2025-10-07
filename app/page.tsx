@@ -90,14 +90,16 @@ export default function HomePage() {
     if (!authLoading) {
       initializeApp();
     }
+  }, [authLoading]); // Only depend on authLoading
 
-    // Auto-scroll banner every 3 seconds
+  // Separate effect for banner auto-scroll
+  useEffect(() => {
     const interval = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % banners.length);
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [banners.length, authLoading, login, getTelegramUser, getTelegramInitData]);
+  }, [banners.length]); // Separate banner effect
 
   // Separate effect for loading user-specific data
   useEffect(() => {

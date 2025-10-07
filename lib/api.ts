@@ -301,13 +301,20 @@ class ApiClient {
     }>;
     notes?: string;
     reservationDateTime?: string;
+    contactPhone?: string;
   }): Promise<Order> {
+    // Ensure contactPhone is always provided and not empty
+    const contactPhone = orderData.contactPhone && orderData.contactPhone.trim() 
+      ? orderData.contactPhone.trim() 
+      : '+77777777777';
+    
     // Transform data to match backend expectations
     const transformedData = {
       storeId: orderData.storeId,
       items: orderData.orderItems, // Rename orderItems to items
-      notes: orderData.notes,
-      reservationDateTime: orderData.reservationDateTime
+      notes: orderData.notes || 'Заказ через мобильное приложение',
+      reservationDateTime: orderData.reservationDateTime,
+      contactPhone: contactPhone
     };
     
     if (process.env.NODE_ENV === 'development') {

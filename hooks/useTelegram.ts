@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 declare global {
   interface Window {
@@ -47,19 +47,19 @@ export const useTelegram = () => {
     }
   }, []); // Empty dependency array ensures this runs only once
 
-  const getTelegramUser = () => {
+  const getTelegramUser = useCallback(() => {
     if (typeof window !== "undefined" && window.Telegram?.WebApp?.initDataUnsafe?.user) {
       return window.Telegram.WebApp.initDataUnsafe.user;
     }
     return null;
-  };
+  }, []);
 
-  const getTelegramInitData = () => {
+  const getTelegramInitData = useCallback(() => {
     if (typeof window !== "undefined" && window.Telegram?.WebApp?.initData) {
       return window.Telegram.WebApp.initData;
     }
     return null;
-  };
+  }, []);
 
   return {
     isAvailable: typeof window !== "undefined" && !!window.Telegram?.WebApp,

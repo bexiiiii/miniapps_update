@@ -10,7 +10,7 @@ import { apiClient, Product } from "../../../lib/api";
 export default function ProductDetailsPage() {
   const params = useParams();
   const productId = params.id as string;
-  const { } = useTelegram(); // Initialize Telegram singleton
+  const { getTelegramUser } = useTelegram(); // Initialize Telegram singleton
   
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -39,14 +39,22 @@ export default function ProductDetailsPage() {
 
     setIsReserving(true);
     try {
+      // Use default phone number for now (could be made configurable later)
+      const contactPhone = "+77777777777";
+      
       const orderData = {
         storeId: product.storeId,
         orderItems: [{
           productId: product.id,
           quantity: quantity
         }],
-        notes: `Заброниовано через приложение`,
+        notes: `Забронировано через приложение. Количество: ${quantity}`,
+        contactPhone: contactPhone
       };
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Sending order data:', orderData);
+      }
 
       const order = await apiClient.createOrder(orderData);
       
