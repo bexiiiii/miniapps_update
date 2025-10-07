@@ -39,9 +39,9 @@ export default function HomePage() {
         setUserName(fullName || telegramUser.username || 'Пользователь');
       }
 
-      // Authenticate user with Telegram
+      // Authenticate user with Telegram (only if not already authenticated)
       const initData = getTelegramInitData();
-      if (initData && !authLoading && isMounted) {
+      if (initData && !authLoading && !user && isMounted) {
         try {
           await login(initData);
         } catch (error) {
@@ -54,10 +54,13 @@ export default function HomePage() {
         try {
           const productsResponse = await apiClient.getFeaturedProducts(0, 5);
           if (isMounted) {
-            setFeaturedProducts(productsResponse.content);
+            setFeaturedProducts(productsResponse.content || []);
           }
         } catch (error) {
           console.error('Failed to load featured products:', error);
+          if (isMounted) {
+            setFeaturedProducts([]);
+          }
         } finally {
           if (isMounted) {
             setIsLoading(false);
@@ -73,7 +76,7 @@ export default function HomePage() {
     return () => {
       isMounted = false; // Cleanup to prevent state updates after unmount
     };
-  }, [authLoading, getTelegramUser, getTelegramInitData, login]); // Include stable dependencies
+  }, [authLoading, getTelegramUser, getTelegramInitData, login, user]); // Include necessary dependencies
 
   // Separate effect for banner auto-scroll
   useEffect(() => {
@@ -224,7 +227,7 @@ export default function HomePage() {
         
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
           <div className="flex gap-4">
-            {featuredProducts.map((product) => (
+            {featuredProducts && featuredProducts.length > 0 ? featuredProducts.map((product) => (
               <Link key={product.id} href={`/details/${product.id}`} className="flex-shrink-0 w-[250px]">
                 <div className="bg-gray-100 rounded-2xl p-4">
                   <h4 className="text-lg font-medium text-black font-inter">{product.name}</h4>
@@ -245,8 +248,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </Link>
-            ))}
-            {featuredProducts.length === 0 && !isLoading && (
+            )) : !isLoading && (
               <div className="flex-shrink-0 w-[250px]">
                 <div className="bg-gray-100 rounded-2xl p-4">
                   <h4 className="text-lg font-medium text-black font-inter">{t("donerNaAbaya")}</h4>

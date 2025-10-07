@@ -133,6 +133,7 @@ class ApiClient {
   private baseURL: string;
   private token: string | null = null;
   private activeRequests = new Map<string, Promise<unknown>>(); // Cache for preventing duplicate requests
+  private isAuthenticating = false; // Flag to prevent multiple auth attempts
 
   constructor() {
     this.baseURL = API_BASE_URL;
@@ -154,6 +155,7 @@ class ApiClient {
 
   clearToken() {
     this.token = null;
+    this.isAuthenticating = false; // Reset authentication flag
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
     }
@@ -253,17 +255,40 @@ class ApiClient {
 
   // Authentication methods
   async authenticateWithTelegram(initData: string): Promise<AuthResponse> {
-    const response = await this.makeRequest<AuthResponse>('/auth/telegram', {
-      method: 'POST',
-      body: JSON.stringify({ initData }),
-    });
-    
-    // Server returns 'accessToken', not 'token'
-    const token = response.accessToken || response.token;
-    if (token) {
-      this.setToken(token);
+    // Prevent multiple simultaneous authentication attempts
+    if (this.isAuthenticating) {
+      throw new Error('Authentication already in progress');
     }
-    return response;
+
+    // Check if already authenticated
+    if (this.token) {
+      console.log('Already authenticated, skipping authentication');
+      try {
+        const user = await this.getCurrentUser();
+        return { user, accessToken: this.token, token: this.token };
+      } catch (error) {
+        console.log('Existing token invalid, proceeding with authentication');
+        this.clearToken();
+      }
+    }
+
+    this.isAuthenticating = true;
+
+    try {
+      const response = await this.makeRequest<AuthResponse>('/auth/telegram', {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      });
+      
+      // Server returns 'accessToken', not 'token'
+      const token = response.accessToken || response.token;
+      if (token) {
+        this.setToken(token);
+      }
+      return response;
+    } finally {
+      this.isAuthenticating = false;
+    }
   }
 
   async getCurrentUser(): Promise<User> {

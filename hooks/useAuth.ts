@@ -13,11 +13,13 @@ export const useAuth = (): UseAuthReturn => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authenticationAttempted, setAuthenticationAttempted] = useState(false);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      if (isAuthenticated()) {
+      if (isAuthenticated() && !authenticationAttempted) {
         try {
+          setAuthenticationAttempted(true);
           const currentUser = await apiClient.getCurrentUser();
           setUser(currentUser);
           setIsLoggedIn(true);
@@ -34,16 +36,23 @@ export const useAuth = (): UseAuthReturn => {
     };
 
     checkAuthStatus();
-  }, []);
+  }, [authenticationAttempted]);
 
   const login = async (initData: string) => {
+    // Prevent multiple login attempts
+    if (isLoggedIn || authenticationAttempted) {
+      return;
+    }
+
     try {
       setIsLoading(true);
+      setAuthenticationAttempted(true);
       const authResponse = await apiClient.authenticateWithTelegram(initData);
       setUser(authResponse.user);
       setIsLoggedIn(true);
     } catch (error) {
       console.error('Login failed:', error);
+      setAuthenticationAttempted(false); // Reset on failure
       throw error;
     } finally {
       setIsLoading(false);
