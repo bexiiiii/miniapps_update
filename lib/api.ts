@@ -132,7 +132,7 @@ export interface TelegramAuthRequest {
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
-  private activeRequests = new Map<string, Promise<any>>(); // Cache for preventing duplicate requests
+  private activeRequests = new Map<string, Promise<unknown>>(); // Cache for preventing duplicate requests
 
   constructor() {
     this.baseURL = API_BASE_URL;
@@ -168,7 +168,7 @@ class ApiClient {
     
     // If the same request is already in progress, return the existing promise
     if (this.activeRequests.has(requestKey)) {
-      return this.activeRequests.get(requestKey);
+      return this.activeRequests.get(requestKey) as Promise<T>;
     }
 
     const url = `${this.baseURL}${endpoint}`;

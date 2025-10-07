@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Clock, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTelegram } from "../../../hooks/useTelegram";
@@ -10,7 +10,7 @@ import { apiClient, Product } from "../../../lib/api";
 export default function ProductDetailsPage() {
   const params = useParams();
   const productId = params.id as string;
-  const { getTelegramUser } = useTelegram(); // Initialize Telegram singleton
+  const { } = useTelegram(); // Initialize Telegram singleton
   
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);

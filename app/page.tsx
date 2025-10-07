@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAuth } from "../hooks/useAuth";
 import { useTelegram } from "../hooks/useTelegram";
-import { apiClient, Product, Order, Store } from "../lib/api";
+import { apiClient, Product, Order } from "../lib/api";
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -22,39 +22,6 @@ export default function HomePage() {
     { id: 1, title: t("foodWithDiscount"), subtitle: t("upTo80"), color: "#de8a08" },
     { id: 2, title: t("freeDelivery"), subtitle: t("from2000"), color: "#73be61" },
     { id: 3, title: t("newRestaurants"), subtitle: t("everyDay"), color: "#ff6b6b" },
-  ];
-
-  const nearbyBoxes = [
-    {
-      id: 1,
-      name: t("donerNaAbaya"),
-      meals: `15 ${t("meals")}`,
-      location: t("kabanbayBatyra"),
-    },
-    {
-      id: 2,
-      name: t("burgerFastFood"),
-      meals: `23 ${t("meals")}`,
-      location: t("satpayeva"),
-    },
-    {
-      id: 3,
-      name: t("pizzaHouse"),
-      meals: `18 ${t("meals")}`,
-      location: t("abaya150"),
-    },
-    {
-      id: 4,
-      name: t("shaurmaExpress"),
-      meals: `12 ${t("meals")}`,
-      location: t("rozybakyeva"),
-    },
-    {
-      id: 5,
-      name: t("coffeeAndMore"),
-      meals: `8 ${t("meals")}`,
-      location: t("nazarbayeva"),
-    },
   ];
 
   useEffect(() => {

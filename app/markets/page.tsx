@@ -8,7 +8,6 @@ import { useTelegram } from "../../hooks/useTelegram";
 import { apiClient, Store } from "../../lib/api";
 
 export default function MarketsPage() {
-  const { t } = useTranslation();
   const { } = useTelegram(); // Initialize Telegram singleton
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
