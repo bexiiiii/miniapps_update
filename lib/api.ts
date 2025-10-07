@@ -293,6 +293,29 @@ class ApiClient {
     return this.makeRequest<Order>(`/orders/${id}`);
   }
 
+  // Mini App specific method for creating reservations
+  async createReservation(orderData: {
+    productId: number;
+    quantity: number;
+    note?: string;
+  }): Promise<Order> {
+    const reservationData = {
+      productId: orderData.productId,
+      quantity: orderData.quantity,
+      note: orderData.note || 'Забронировано через мини-приложение Telegram'
+    };
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Creating reservation with data:', reservationData);
+    }
+    
+    return this.makeRequest<Order>('/miniapp/reservations', {
+      method: 'POST',
+      body: JSON.stringify(reservationData),
+    });
+  }
+
+  // Legacy method - keep for compatibility but use createReservation instead
   async createOrder(orderData: {
     storeId: number;
     orderItems: Array<{
@@ -303,28 +326,17 @@ class ApiClient {
     reservationDateTime?: string;
     contactPhone?: string;
   }): Promise<Order> {
-    // Ensure contactPhone is always provided and not empty
-    const contactPhone = orderData.contactPhone && orderData.contactPhone.trim() 
-      ? orderData.contactPhone.trim() 
-      : '+77777777777';
-    
-    // Transform data to match backend expectations
-    const transformedData = {
-      storeId: orderData.storeId,
-      items: orderData.orderItems, // Rename orderItems to items
-      notes: orderData.notes || 'Заказ через мобильное приложение',
-      reservationDateTime: orderData.reservationDateTime,
-      contactPhone: contactPhone
-    };
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Creating order with data:', transformedData);
+    // For mini app, use the first product for reservation
+    if (orderData.orderItems && orderData.orderItems.length > 0) {
+      const firstItem = orderData.orderItems[0];
+      return this.createReservation({
+        productId: firstItem.productId,
+        quantity: firstItem.quantity,
+        note: orderData.notes || 'Забронировано через мини-приложение Telegram'
+      });
     }
     
-    return this.makeRequest<Order>('/orders', {
-      method: 'POST',
-      body: JSON.stringify(transformedData),
-    });
+    throw new Error('No items to order');
   }
 }
 

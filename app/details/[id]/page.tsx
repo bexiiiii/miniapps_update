@@ -39,24 +39,17 @@ export default function ProductDetailsPage() {
 
     setIsReserving(true);
     try {
-      // Use default phone number for now (could be made configurable later)
-      const contactPhone = "+77777777777";
-      
-      const orderData = {
-        storeId: product.storeId,
-        orderItems: [{
-          productId: product.id,
-          quantity: quantity
-        }],
-        notes: `Забронировано через приложение. Количество: ${quantity}`,
-        contactPhone: contactPhone
+      const reservationData = {
+        productId: product.id,
+        quantity: quantity,
+        note: `Забронировано через Telegram. Количество: ${quantity}`
       };
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('Sending order data:', orderData);
+        console.log('Creating reservation with data:', reservationData);
       }
 
-      const order = await apiClient.createOrder(orderData);
+      const order = await apiClient.createReservation(reservationData);
       
       // Show success message or redirect
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
@@ -66,7 +59,7 @@ export default function ProductDetailsPage() {
       // Redirect to orders page
       window.location.href = '/orders';
     } catch (error) {
-      console.error('Failed to create order:', error);
+      console.error('Failed to create reservation:', error);
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         console.error('Ошибка при создании заказа. Попробуйте снова.');
       }
