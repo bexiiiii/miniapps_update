@@ -10,7 +10,7 @@ const getApiBaseUrl = (): string => {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/api`;
     }
-    return 'http://localhost:3000/api';
+    return 'https://foodsave.kz/api';
   }
   
   // In production, try to determine the correct API URL
@@ -19,15 +19,15 @@ const getApiBaseUrl = (): string => {
     
     // If we're on the mini app domain
     if (hostname.includes('miniapp.foodsave.kz')) {
-      return 'https://miniapp.foodsave.kz/api';
+      return 'https://foodsave.kz/api';
     }
     
     // If we're on localhost or any other domain, try the main API
-    return 'https://miniapp.foodsave.kz/api';
+    return 'https://foodsave.kz/api';
   }
   
   // Default fallback
-  return 'https://miniapp.foodsave.kz/api';
+  return 'https://foodsave.kz/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
