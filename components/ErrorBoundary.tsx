@@ -25,16 +25,21 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       'telegram',
       'MTProto',
       'Connection closed',
-      'Failed to fetch'
+      'Failed to fetch',
+      'Cannot read properties of undefined',
+      'length',
+      'Network request failed',
+      'Loading chunk'
     ];
     
     const shouldIgnore = ignoredErrors.some(ignoredError => 
       error.message?.toLowerCase().includes(ignoredError.toLowerCase()) ||
-      error.name?.toLowerCase().includes(ignoredError.toLowerCase())
+      error.name?.toLowerCase().includes(ignoredError.toLowerCase()) ||
+      error.stack?.toLowerCase().includes(ignoredError.toLowerCase())
     );
     
     if (shouldIgnore) {
-      console.warn('Ignoring error in ErrorBoundary:', error);
+      console.warn('Ignoring error in ErrorBoundary:', error.message);
       return { hasError: false };
     }
     

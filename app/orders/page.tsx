@@ -139,25 +139,25 @@ export default function OrdersPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <p className="text-xs text-black/60 font-inter">
-                          {order.orderItems.length} позиций
+                          {order.orderItems?.length || 0} позиций
                         </p>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {order.orderItems.slice(0, 2).map((item, index) => (
+                          {(order.orderItems || []).slice(0, 2).map((item, index) => (
                             <span key={index} className="text-xs text-black/50 font-inter">
                               {item.productName} x{item.quantity}
-                              {index < Math.min(order.orderItems.length, 2) - 1 && ', '}
+                              {index < Math.min(order.orderItems?.length || 0, 2) - 1 && ', '}
                             </span>
                           ))}
-                          {order.orderItems.length > 2 && (
+                          {(order.orderItems?.length || 0) > 2 && (
                             <span className="text-xs text-black/50 font-inter">
-                              +{order.orderItems.length - 2} ещё
+                              +{(order.orderItems?.length || 0) - 2} ещё
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0 ml-3">
                         <p className="text-sm font-bold text-black font-inter">
-                          {order.totalAmount.toLocaleString()} ₸
+                          {(order.totalAmount || order.total || 0).toLocaleString()} ₸
                         </p>
                       </div>
                     </div>

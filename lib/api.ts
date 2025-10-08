@@ -129,9 +129,28 @@ export interface Order {
   userId: number;
   storeId: number;
   storeName?: string;
+  storeAddress?: string;
+  storeLogo?: string;
+  storePhone?: string;
+  orderNumber: string;
   status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY_FOR_PICKUP' | 'COMPLETED' | 'CANCELLED';
-  totalAmount: number;
-  orderItems: OrderItem[];
+  paymentMethod?: string;
+  paymentStatus?: string;
+  totalAmount?: number;
+  total?: number;
+  subtotal?: number;
+  totalDiscount?: number;
+  orderItems?: OrderItem[];
+  items?: OrderItem[]; // Alternative field name
+  deliveryAddress?: string;
+  deliveryNotes?: string;
+  userAddress?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhone?: string;
+  contactPhone?: string;
+  estimatedDeliveryTime?: string;
+  trackingNumber?: string;
   reservationDateTime?: string;
   notes?: string;
   createdAt: string;
@@ -139,12 +158,13 @@ export interface Order {
 }
 
 export interface OrderItem {
-  id: number;
+  id?: number;
+  orderId?: number;
   productId: number;
   productName: string;
   quantity: number;
   price: number;
-  totalPrice: number;
+  totalPrice?: number;
 }
 
 // Authentication types
@@ -320,7 +340,7 @@ class ApiClient {
       try {
         const user = await this.getCurrentUser();
         return { user, accessToken: this.token, token: this.token };
-      } catch (error) {
+      } catch {
         console.log('Existing token invalid, proceeding with authentication');
         this.clearToken();
       }
@@ -495,8 +515,21 @@ class ApiClient {
         throw new Error('Authentication required');
       }
       const response = await this.makeRequest<Order[]>('/orders/my-orders');
-      // Ensure response is an array
-      return Array.isArray(response) ? response : [];
+      
+      // Ensure response is an array and normalize the data
+      if (!Array.isArray(response)) {
+        return [];
+      }
+      
+      // Normalize order data to ensure all required fields are present
+      return response.map(order => ({
+        ...order,
+        orderItems: Array.isArray(order.orderItems) ? order.orderItems : 
+                   Array.isArray(order.items) ? order.items : [],
+        totalAmount: order.totalAmount || order.total || 0,
+        storeName: order.storeName || 'Unknown Store',
+        notes: order.notes || order.deliveryNotes || ''
+      }));
     } catch (error) {
       console.error('Failed to fetch orders:', error);
       return [];

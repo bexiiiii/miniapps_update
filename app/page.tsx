@@ -162,7 +162,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-sm text-black/60 font-inter mt-1">
-                {new Date(latestOrder.createdAt).toLocaleDateString()} • {latestOrder.totalAmount}₸
+                {new Date(latestOrder.createdAt).toLocaleDateString()} • {latestOrder.totalAmount || latestOrder.total || 0}₸
               </p>
             </div>
           ) : (

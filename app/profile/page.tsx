@@ -83,10 +83,16 @@ export default function ProfilePage() {
             <ChevronRight className="w-5 h-5 text-black" />
           </Link>
           
-          <Link href="/support" className="flex items-center justify-between px-6 py-4 hover:bg-gray-200 transition-colors">
+          <button 
+            onClick={() => {
+              // Открываем Telegram аккаунт поддержки
+              window.open('https://t.me/FoodSave_kz', '_blank');
+            }}
+            className="flex items-center justify-between px-6 py-4 hover:bg-gray-200 transition-colors w-full text-left"
+          >
             <span className="text-base font-medium text-black font-inter">Поддержка</span>
             <ChevronRight className="w-5 h-5 text-black" />
-          </Link>
+          </button>
         </div>
       </div>
 
