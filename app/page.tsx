@@ -6,17 +6,22 @@ import Link from "next/link";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAuth } from "../hooks/useAuth";
 import { useTelegram } from "../hooks/useTelegram";
-import { apiClient, Product, Order } from "../lib/api";
+import { useFeaturedProducts, useOrders } from "../hooks/useData";
+import { safeString } from "../lib/utils";
+import { safeArray } from "../lib/api";
+import { Product } from "../lib/api";
 
 export default function HomePage() {
   const { t } = useTranslation();
-  const { user, isLoading: authLoading, login } = useAuth();
+  const { user, isLoading: authLoading, login, error: authError } = useAuth();
   const { getTelegramUser, getTelegramInitData } = useTelegram();
   const [currentBanner, setCurrentBanner] = useState(0);
-  const [latestOrder, setLatestOrder] = useState<Order | null>(null);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Use safe hooks for data fetching
+  const { data: featuredProductsResponse, isLoading: productsLoading } = useFeaturedProducts(0, 5);
+  const { orders, isLoading: ordersLoading } = useOrders();
 
   const banners = [
     { id: 1, title: t("foodWithDiscount"), subtitle: t("upTo80"), color: "#de8a08" },
@@ -24,100 +29,49 @@ export default function HomePage() {
     { id: 3, title: t("newRestaurants"), subtitle: t("everyDay"), color: "#ff6b6b" },
   ];
 
+  // Get featured products safely
+  const featuredProducts = safeArray(featuredProductsResponse?.content);
+  
+  // Get latest order safely
+  const latestOrder = safeArray(orders)[0] || null;
+
+  // Initialize Telegram authentication
   useEffect(() => {
-    let isMounted = true;
-    let initializationStarted = false;
+    if (authInitialized || authLoading) return;
 
-    const initializeApp = async () => {
-      if (initializationStarted) return; // Prevent multiple simultaneous initializations
-      initializationStarted = true;
-
+    const initializeAuth = async () => {
       // Get user name from Telegram
       const telegramUser = getTelegramUser();
-      if (telegramUser && isMounted) {
-        const fullName = `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim();
-        setUserName(fullName || telegramUser.username || 'Пользователь');
+      if (telegramUser) {
+        const fullName = `${safeString(telegramUser.first_name)} ${safeString(telegramUser.last_name)}`.trim();
+        setUserName(fullName || safeString(telegramUser.username) || 'Пользователь');
       }
 
       // Authenticate user with Telegram (only if not already authenticated)
       const initData = getTelegramInitData();
-      if (initData && !authLoading && !user && isMounted) {
+      if (initData && !user) {
         try {
           await login(initData);
         } catch (error) {
           console.error('Telegram authentication failed:', error);
+          // Don't throw error, app should still work without auth
         }
       }
 
-      // Load public data (no authentication required)
-      if (isMounted) {
-        try {
-          const productsResponse = await apiClient.getFeaturedProducts(0, 5);
-          if (isMounted) {
-            setFeaturedProducts(productsResponse.content || []);
-          }
-        } catch (error) {
-          console.error('Failed to load featured products:', error);
-          if (isMounted) {
-            setFeaturedProducts([]);
-          }
-        } finally {
-          if (isMounted) {
-            setIsLoading(false);
-          }
-        }
-      }
+      setAuthInitialized(true);
     };
 
-    if (!authLoading) {
-      initializeApp();
-    }
+    initializeAuth();
+  }, [authInitialized, authLoading, user, getTelegramUser, getTelegramInitData, login]);
 
-    return () => {
-      isMounted = false; // Cleanup to prevent state updates after unmount
-    };
-  }, [authLoading, getTelegramUser, getTelegramInitData, login, user]); // Include necessary dependencies
-
-  // Separate effect for banner auto-scroll
+  // Banner auto-scroll
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % banners.length);
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [banners.length]); // Separate banner effect
-
-  // Separate effect for loading user-specific data
-  useEffect(() => {
-    let isMounted = true;
-    let loadingStarted = false;
-
-    const loadUserData = async () => {
-      if (!user || authLoading || loadingStarted) return;
-      loadingStarted = true;
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Loading user data for user:', user);
-      }
-      try {
-        const orders = await apiClient.getMyOrders();
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Orders loaded:', orders);
-        }
-        if (orders.length > 0 && isMounted) {
-          setLatestOrder(orders[0]); // Most recent order
-        }
-      } catch (error) {
-        console.error('Failed to load user orders:', error);
-      }
-    };
-
-    loadUserData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user, authLoading]);
+  }, [banners.length]);
 
   return (
     <div className="min-h-screen bg-white pb-20" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -127,7 +81,7 @@ export default function HomePage() {
           <div>
             <p className="text-sm text-black/50 font-medium font-inter">{t("welcome")}</p>
             <h1 className="text-lg font-bold text-black mt-1 font-inter">
-              {userName || user?.firstName || user?.telegramUsername || t("userName")}
+              {userName || safeString(user?.firstName) || safeString(user?.telegramUsername) || t("userName")}
             </h1>
           </div>
           <Link href="/notifications" className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
@@ -135,6 +89,15 @@ export default function HomePage() {
           </Link>
         </div>
       </div>
+
+      {/* Auth Error Display */}
+      {authError && (
+        <div className="px-4 mt-2">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-red-600 text-sm">{authError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Discount Banner - Carousel */}
       <div className="px-4 mt-6">
@@ -181,7 +144,7 @@ export default function HomePage() {
         <div className="bg-gray-100 rounded-2xl p-5 relative">
           <p className="text-black/50 text-base font-medium font-inter">{t("myOrders")}</p>
           
-          {isLoading ? (
+          {ordersLoading ? (
             <div className="mt-4">
               <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
               <div className="h-4 bg-gray-200 rounded mt-2 w-1/2 animate-pulse"></div>
@@ -190,7 +153,7 @@ export default function HomePage() {
             <div className="mt-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-black font-inter">
-                  {latestOrder.storeName}
+                  {safeString(latestOrder.storeName)}
                 </h3>
                 <div className="bg-[#73be61] rounded-2xl px-4 py-1">
                   <span className="text-white text-sm font-medium font-inter">
@@ -216,7 +179,6 @@ export default function HomePage() {
       </div>
 
       {/* Nearby boxes */}
-            {/* Nearby boxes */}
       <div className="px-4 mt-20">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-black font-inter">{t("nearbyBoxes")}</h3>
@@ -227,20 +189,24 @@ export default function HomePage() {
         
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
           <div className="flex gap-4">
-            {featuredProducts && featuredProducts.length > 0 ? featuredProducts.map((product) => (
+            {featuredProducts.length > 0 ? featuredProducts.map((product: Product) => (
               <Link key={product.id} href={`/details/${product.id}`} className="flex-shrink-0 w-[250px]">
                 <div className="bg-gray-100 rounded-2xl p-4">
-                  <h4 className="text-lg font-medium text-black font-inter">{product.name}</h4>
+                  <h4 className="text-lg font-medium text-black font-inter">{safeString(product.name)}</h4>
                   <div className="flex items-center gap-4 mt-2 text-sm font-semibold text-black/60 font-inter">
                     <span>{product.stockQuantity} {t("meals")}</span>
-                    <span>{product.storeName}</span>
+                    <span>{safeString(product.storeName)}</span>
                   </div>
-                  <div className="bg-[#73be61] rounded-2xl h-32 mt-4 flex items-center justify-center">
+                  <div className="bg-[#73be61] rounded-2xl h-32 mt-4 flex items-center justify-center overflow-hidden">
                     {product.imageUrl ? (
                       <img 
                         src={product.imageUrl} 
-                        alt={product.name}
+                        alt={safeString(product.name)}
                         className="w-full h-full object-cover rounded-2xl"
+                        onError={(e) => {
+                          // Replace with placeholder on error
+                          (e.target as HTMLImageElement).src = '/placeholder-food.jpg';
+                        }}
                       />
                     ) : (
                       <div className="text-white text-sm font-inter">Фото</div>
@@ -248,7 +214,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </Link>
-            )) : !isLoading && (
+            )) : !productsLoading ? (
               <div className="flex-shrink-0 w-[250px]">
                 <div className="bg-gray-100 rounded-2xl p-4">
                   <h4 className="text-lg font-medium text-black font-inter">{t("donerNaAbaya")}</h4>
@@ -258,6 +224,19 @@ export default function HomePage() {
                   </div>
                   <div className="bg-[#73be61] rounded-2xl h-32 mt-4"></div>
                 </div>
+              </div>
+            ) : (
+              // Loading skeleton
+              <div className="flex gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex-shrink-0 w-[250px]">
+                    <div className="bg-gray-100 rounded-2xl p-4 animate-pulse">
+                      <div className="h-6 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded mt-2 w-3/4"></div>
+                      <div className="bg-gray-200 rounded-2xl h-32 mt-4"></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

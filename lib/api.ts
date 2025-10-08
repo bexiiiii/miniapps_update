@@ -257,12 +257,19 @@ class ApiClient {
   async authenticateWithTelegram(initData: string): Promise<AuthResponse> {
     // Prevent multiple simultaneous authentication attempts
     if (this.isAuthenticating) {
-      throw new Error('Authentication already in progress');
+      console.log('Authentication already in progress, waiting...');
+      // Wait for current authentication to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (this.token) {
+        const user = await this.getCurrentUser();
+        return { user, accessToken: this.token, token: this.token };
+      }
+      throw new Error('Authentication failed - please try again');
     }
 
-    // Check if already authenticated
+    // Check if already authenticated and token is valid
     if (this.token) {
-      console.log('Already authenticated, skipping authentication');
+      console.log('Already authenticated, validating token');
       try {
         const user = await this.getCurrentUser();
         return { user, accessToken: this.token, token: this.token };
@@ -270,6 +277,11 @@ class ApiClient {
         console.log('Existing token invalid, proceeding with authentication');
         this.clearToken();
       }
+    }
+
+    // Validate initData before making request
+    if (!initData || initData.trim().length === 0) {
+      throw new Error('Invalid Telegram init data');
     }
 
     this.isAuthenticating = true;
@@ -280,24 +292,46 @@ class ApiClient {
         body: JSON.stringify({ initData }),
       });
       
+      // Validate response
+      if (!response || !response.user) {
+        throw new Error('Invalid authentication response');
+      }
+      
       // Server returns 'accessToken', not 'token'
       const token = response.accessToken || response.token;
       if (token) {
         this.setToken(token);
+      } else {
+        throw new Error('No token received from server');
       }
+      
       return response;
+    } catch (error) {
+      console.error('Authentication failed:', error);
+      this.clearToken(); // Clear any partial state
+      throw error;
     } finally {
       this.isAuthenticating = false;
     }
   }
 
   async getCurrentUser(): Promise<User> {
+    if (!this.token) {
+      throw new Error('No authentication token available');
+    }
     return this.makeRequest<User>('/auth/me');
   }
 
   // Store methods
   async getActiveStores(): Promise<Store[]> {
-    return this.makePublicRequest<Store[]>('/stores/active');
+    try {
+      const response = await this.makePublicRequest<Store[]>('/stores/active');
+      // Ensure response is an array
+      return Array.isArray(response) ? response : [];
+    } catch (err) {
+      console.error('Failed to fetch active stores:', err);
+      return [];
+    }
   }
 
   async getStoreById(id: number): Promise<Store> {
@@ -306,11 +340,63 @@ class ApiClient {
 
   // Product methods
   async getAllProducts(page = 0, size = 20): Promise<PaginationResponse<Product>> {
-    return this.makePublicRequest<PaginationResponse<Product>>(`/products?page=${page}&size=${size}`);
+    try {
+      const response = await this.makePublicRequest<PaginationResponse<Product>>(`/products?page=${page}&size=${size}`);
+      // Ensure content is an array
+      if (!response || !Array.isArray(response.content)) {
+        return {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: size,
+          number: page,
+          first: true,
+          last: true
+        };
+      }
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      return {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: size,
+        number: page,
+        first: true,
+        last: true
+      };
+    }
   }
 
   async getProductsByStore(storeId: number, page = 0, size = 20): Promise<PaginationResponse<Product>> {
-    return this.makePublicRequest<PaginationResponse<Product>>(`/products/store/${storeId}?page=${page}&size=${size}`);
+    try {
+      const response = await this.makePublicRequest<PaginationResponse<Product>>(`/products/store/${storeId}?page=${page}&size=${size}`);
+      // Ensure content is an array
+      if (!response || !Array.isArray(response.content)) {
+        return {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: size,
+          number: page,
+          first: true,
+          last: true
+        };
+      }
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch store products:', error);
+      return {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: size,
+        number: page,
+        first: true,
+        last: true
+      };
+    }
   }
 
   async getProductById(id: number): Promise<Product> {
@@ -318,12 +404,48 @@ class ApiClient {
   }
 
   async getFeaturedProducts(page = 0, size = 20): Promise<PaginationResponse<Product>> {
-    return this.makePublicRequest<PaginationResponse<Product>>(`/products/featured?page=${page}&size=${size}`);
+    try {
+      const response = await this.makePublicRequest<PaginationResponse<Product>>(`/products/featured?page=${page}&size=${size}`);
+      // Ensure content is an array
+      if (!response || !Array.isArray(response.content)) {
+        return {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: size,
+          number: page,
+          first: true,
+          last: true
+        };
+      }
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch featured products:', error);
+      return {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: size,
+        number: page,
+        first: true,
+        last: true
+      };
+    }
   }
 
   // Order methods
   async getMyOrders(): Promise<Order[]> {
-    return this.makeRequest<Order[]>('/orders/my-orders');
+    try {
+      if (!this.token) {
+        throw new Error('Authentication required');
+      }
+      const response = await this.makeRequest<Order[]>('/orders/my-orders');
+      // Ensure response is an array
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+      return [];
+    }
   }
 
   async getOrderById(id: number): Promise<Order> {
@@ -379,6 +501,47 @@ class ApiClient {
 
 // Create singleton instance
 export const apiClient = new ApiClient();
+
+// Helper function to safely handle arrays
+export const safeArray = <T>(data: T[] | undefined | null): T[] => {
+  return Array.isArray(data) ? data : [];
+};
+
+// Helper function to safely handle pagination data
+export const safePaginationResponse = <T>(
+  data: PaginationResponse<T> | undefined | null,
+  page = 0,
+  size = 20
+): PaginationResponse<T> => {
+  if (!data || !Array.isArray(data.content)) {
+    return {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: size,
+      number: page,
+      first: true,
+      last: true
+    };
+  }
+  return data;
+};
+
+// Rate limiting helper
+let lastRequestTime = 0;
+const REQUEST_THROTTLE_MS = 500; // 500ms between requests
+
+export const throttleRequest = async (): Promise<void> => {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  if (timeSinceLastRequest < REQUEST_THROTTLE_MS) {
+    const waitTime = REQUEST_THROTTLE_MS - timeSinceLastRequest;
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+  
+  lastRequestTime = Date.now();
+};
 
 // Helper hooks and functions for React components
 export const getAuthToken = (): string | null => {

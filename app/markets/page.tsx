@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
-import { useTranslation } from "../../hooks/useTranslation";
 import { useTelegram } from "../../hooks/useTelegram";
 import { apiClient, Store } from "../../lib/api";
 
