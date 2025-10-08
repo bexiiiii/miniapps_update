@@ -2,7 +2,7 @@
 
 export const API_CONFIG = {
   // Base URL for API requests
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://foodsave.kz/api',
   
   // Request timeouts (in milliseconds)
   TIMEOUT: {

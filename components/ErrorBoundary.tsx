@@ -19,11 +19,46 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Don't trigger error boundary for certain types of errors
+    const ignoredErrors = [
+      'WebSocket',
+      'telegram',
+      'MTProto',
+      'Connection closed',
+      'Failed to fetch'
+    ];
+    
+    const shouldIgnore = ignoredErrors.some(ignoredError => 
+      error.message?.toLowerCase().includes(ignoredError.toLowerCase()) ||
+      error.name?.toLowerCase().includes(ignoredError.toLowerCase())
+    );
+    
+    if (shouldIgnore) {
+      console.warn('Ignoring error in ErrorBoundary:', error);
+      return { hasError: false };
+    }
+    
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Don't log certain types of errors
+    const ignoredErrors = [
+      'WebSocket',
+      'telegram',
+      'MTProto', 
+      'Connection closed',
+      'Failed to fetch'
+    ];
+    
+    const shouldIgnore = ignoredErrors.some(ignoredError => 
+      error.message?.toLowerCase().includes(ignoredError.toLowerCase()) ||
+      error.name?.toLowerCase().includes(ignoredError.toLowerCase())
+    );
+    
+    if (!shouldIgnore) {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    }
   }
 
   render() {

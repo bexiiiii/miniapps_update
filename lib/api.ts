@@ -1,5 +1,36 @@
 // API client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const getApiBaseUrl = (): string => {
+  // Check if we have an explicit API URL
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // In development, use localhost or the current host
+  if (process.env.NODE_ENV === 'development') {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/api`;
+    }
+    return 'http://localhost:3000/api';
+  }
+  
+  // In production, try to determine the correct API URL
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // If we're on the mini app domain
+    if (hostname.includes('miniapp.foodsave.kz')) {
+      return 'https://miniapp.foodsave.kz/api';
+    }
+    
+    // If we're on localhost or any other domain, try the main API
+    return 'https://miniapp.foodsave.kz/api';
+  }
+  
+  // Default fallback
+  return 'https://miniapp.foodsave.kz/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // API response types
 export interface ApiResponse<T> {
@@ -137,6 +168,12 @@ class ApiClient {
 
   constructor() {
     this.baseURL = API_BASE_URL;
+    
+    // Log the API URL in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API Base URL:', this.baseURL);
+    }
+    
     // Load token from localStorage on client side
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('authToken');
@@ -209,7 +246,12 @@ class ApiClient {
         const data = await response.json();
         return data;
       } catch (error) {
-        console.error('API request failed:', error);
+        console.error('API request failed:', {
+          url,
+          method: options.method || 'GET',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         throw error;
       } finally {
         // Remove from active requests when done
@@ -248,7 +290,12 @@ class ApiClient {
 
       return await response.json();
     } catch (error) {
-      console.error('Public API request failed:', error);
+      console.error('Public API request failed:', {
+        url,
+        method: options.method || 'GET', 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   }
@@ -421,15 +468,23 @@ class ApiClient {
       return response;
     } catch (error) {
       console.error('Failed to fetch featured products:', error);
-      return {
-        content: [],
-        totalElements: 0,
-        totalPages: 0,
-        size: size,
-        number: page,
-        first: true,
-        last: true
-      };
+      
+      // Try fallback to all products if featured fails
+      try {
+        console.log('Trying fallback to all products...');
+        return await this.getAllProducts(page, size);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        return {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: size,
+          number: page,
+          first: true,
+          last: true
+        };
+      }
     }
   }
 
