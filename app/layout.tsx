@@ -1,19 +1,24 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { TelegramProvider } from "../contexts/TelegramProvider";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "cyrillic"],
+});
+
 export const metadata: Metadata = {
   title: "FoodSave - Экономь на еде",
   description: "Telegram Mini App для экономии на еде",
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({
@@ -30,8 +35,8 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="font-sans antialiased bg-[#F5F5F5]"
-        style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+        className={`${inter.variable} font-sans antialiased bg-[#F5F5F5]`}
+        style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
       >
         <ErrorBoundary>
           <TelegramProvider>

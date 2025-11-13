@@ -16,6 +16,9 @@ function BoxesContent() {
   const [store, setStore] = useState<Store | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const filterAvailableProducts = (items: Product[] = []) =>
+    items.filter((product) => (product.stockQuantity ?? 0) > 0);
+
   useEffect(() => {
     let isMounted = true;
     let loadingStarted = false;
@@ -39,7 +42,8 @@ function BoxesContent() {
         // Load products for this store
         const productsResponse = await apiClient.getProductsByStore(Number(storeId), 0, 20);
         if (isMounted) {
-          setProducts(productsResponse.content);
+          const filteredProducts = filterAvailableProducts(productsResponse.content);
+          setProducts(filteredProducts);
         }
       } catch (error) {
         console.error('Failed to load data:', error);
