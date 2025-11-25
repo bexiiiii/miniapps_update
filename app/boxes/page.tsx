@@ -17,7 +17,10 @@ function BoxesContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   const filterAvailableProducts = (items: Product[] = []) =>
-    items.filter((product) => (product.stockQuantity ?? 0) > 0);
+    items.filter((product) => 
+      (product.stockQuantity ?? 0) > 0 && 
+      product.status === 'AVAILABLE'
+    );
 
   useEffect(() => {
     let isMounted = true;
@@ -148,10 +151,10 @@ function BoxesContent() {
                 <div className="mt-2">
                   <p className="text-sm font-medium text-black font-inter line-clamp-2">{product.name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    {product.discountedPrice ? (
+                    {product.discountPercentage && product.discountPercentage > 0 ? (
                       <>
                         <p className="text-base font-bold text-black font-inter">
-                          {formatPrice(product.discountedPrice)}
+                          {formatPrice(product.price || product.discountedPrice || product.originalPrice)}
                         </p>
                         <p className="text-sm text-black/50 line-through font-inter">
                           {formatPrice(product.originalPrice)}
@@ -159,7 +162,7 @@ function BoxesContent() {
                       </>
                     ) : (
                       <p className="text-base font-bold text-black font-inter">
-                        {formatPrice(product.originalPrice)}
+                        {formatPrice(product.price || product.originalPrice)}
                       </p>
                     )}
                   </div>

@@ -114,7 +114,7 @@ export default function ProductDetailsPage() {
 
   const calculateTotalPrice = () => {
     if (!product) return 0;
-    const price = product.discountedPrice || product.originalPrice;
+    const price = product.price || product.discountedPrice || product.originalPrice;
     return price * quantity;
   };
 
@@ -217,7 +217,7 @@ export default function ProductDetailsPage() {
                 </div>
               )}
               <p className="text-3xl font-bold text-white font-inter">
-                {formatPrice(product.discountedPrice || product.originalPrice)}
+                {formatPrice(product.price || product.discountedPrice || product.originalPrice)}
               </p>
             </div>
           </div>

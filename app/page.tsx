@@ -31,7 +31,10 @@ export default function HomePage() {
 
   // Get featured products safely
   const featuredProducts = safeArray(featuredProductsResponse?.content)
-    .filter((product: Product) => (product.stockQuantity ?? 0) > 0);
+    .filter((product: Product) => 
+      (product.stockQuantity ?? 0) > 0 && 
+      product.status === 'AVAILABLE'
+    );
   
   // Get latest order safely
   const latestOrder = safeArray(orders)[0] || null;

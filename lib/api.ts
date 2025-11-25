@@ -110,7 +110,8 @@ export interface Product {
   description?: string;
   imageUrl?: string;
   originalPrice: number;
-  discountedPrice?: number;
+  price?: number; // Backend sends this field - the calculated discounted price
+  discountedPrice?: number; // Alternative field name for compatibility
   discountPercentage?: number;
   stockQuantity: number;
   expirationDate?: string;
