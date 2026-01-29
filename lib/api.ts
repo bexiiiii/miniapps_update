@@ -205,9 +205,6 @@ class ApiClient {
     this.token = token;
     if (typeof window !== 'undefined') {
       localStorage.setItem('authToken', token);
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Token saved:', token.substring(0, 20) + '...');
-      }
     }
   }
 
@@ -239,11 +236,6 @@ class ApiClient {
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Making request with token:', this.token.substring(0, 20) + '...');
-      }
-    } else if (process.env.NODE_ENV === 'development') {
-      console.log('Making request without token');
     }
 
     const config: RequestInit = {

@@ -35,7 +35,6 @@ export const useAuth = (): UseAuthReturn => {
           setUser(currentUser);
           setIsLoggedIn(true);
           setError(null);
-          console.log('User loaded from token:', currentUser);
         }
       } catch (error) {
         console.error('Failed to get current user:', error);
