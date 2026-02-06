@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Minus, Plus } from "lucide-react";
+import { ArrowLeft, MapPin, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTelegram } from "../../../hooks/useTelegram";
-import { apiClient, Product } from "../../../lib/api";
+import { apiClient, Product, Store } from "../../../lib/api";
 
 export default function ProductDetailsPage() {
   const params = useParams();
@@ -13,6 +13,7 @@ export default function ProductDetailsPage() {
   const { } = useTelegram(); // Initialize Telegram singleton
   
   const [product, setProduct] = useState<Product | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
@@ -29,6 +30,16 @@ export default function ProductDetailsPage() {
         const productData = await apiClient.getProductById(Number(productId));
         if (isMounted) {
           setProduct(productData);
+        }
+        if (productData?.storeId) {
+          try {
+            const storeData = await apiClient.getStoreById(productData.storeId);
+            if (isMounted) {
+              setStore(storeData);
+            }
+          } catch (storeError) {
+            console.error('Failed to load store:', storeError);
+          }
         }
       } catch (error) {
         console.error('Failed to load product:', error);
@@ -147,7 +158,7 @@ export default function ProductDetailsPage() {
       <div className="px-4 pt-4 pb-4 border-b border-gray-100">
         <div className="flex items-center gap-4">
           <Link href="/boxes" className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300">
-            <ArrowLeft className="w-5 h-5" />
+           <ArrowLeft className="w-5 h-5 text-gray-800" />
           </Link>
           <h1 className="text-xl font-bold text-black font-inter">Детали продукта</h1>
         </div>
@@ -161,6 +172,12 @@ export default function ProductDetailsPage() {
           <span>•</span>
           <span>В наличии</span>
         </div>
+        {store?.address && (
+          <div className="flex items-center gap-2 mt-2 text-sm text-black/60 font-inter">
+            <MapPin className="w-4 h-4" />
+            <span className="line-clamp-1">{store.address}</span>
+          </div>
+        )}
       </div>
 
       {/* Product Image */}

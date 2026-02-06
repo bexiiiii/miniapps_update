@@ -79,7 +79,7 @@ function BoxesContent() {
       <div className="px-4 pt-4 pb-4 border-b border-gray-100">
         <div className="flex items-center gap-4">
           <Link href="/markets" className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300">
-            <ArrowLeft className="w-5 h-5" />
+           <ArrowLeft className="w-5 h-5 text-gray-800" />
           </Link>
           <h1 className="text-xl font-bold text-black font-inter">Продукты</h1>
         </div>
@@ -229,7 +229,7 @@ function LoadingFallback() {
       <div className="px-4 pt-4 pb-4 border-b border-gray-100">
         <div className="flex items-center gap-4">
           <Link href="/markets" className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-            <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5 text-gray-800" />
           </Link>
           <h1 className="text-xl font-bold text-black font-inter">Продукты</h1>
         </div>
