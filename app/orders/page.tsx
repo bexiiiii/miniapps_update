@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../../hooks/useTranslation";
 import { useTelegram } from "../../hooks/useTelegram";
@@ -12,6 +12,8 @@ export default function OrdersPage() {
   const { } = useTelegram(); // Initialize Telegram singleton
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCancellingOrderId, setIsCancellingOrderId] = useState<number | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -27,6 +29,44 @@ export default function OrdersPage() {
 
     loadOrders();
   }, []);
+
+  const cancellableStatuses: Order["status"][] = ["PENDING", "CONFIRMED", "PREPARING", "READY_FOR_PICKUP"];
+
+  const canCancelOrder = (status: Order["status"]) => {
+    return cancellableStatuses.includes(status);
+  };
+
+  const handleCancelOrder = async (order: Order) => {
+    if (typeof window !== "undefined") {
+      const isConfirmed = window.confirm(`Отменить заказ #${order.orderNumber || order.id}?`);
+      if (!isConfirmed) {
+        return;
+      }
+    }
+
+    setCancelError(null);
+    setIsCancellingOrderId(order.id);
+
+    try {
+      const cancelledOrder = await apiClient.cancelOrder(order.id);
+      setOrders((previousOrders) =>
+        previousOrders.map((currentOrder) =>
+          currentOrder.id === order.id
+            ? {
+                ...currentOrder,
+                ...cancelledOrder,
+                status: "CANCELLED"
+              }
+            : currentOrder
+        )
+      );
+    } catch (error) {
+      console.error("Failed to cancel order:", error);
+      setCancelError("Не удалось отменить заказ. Попробуйте ещё раз.");
+    } finally {
+      setIsCancellingOrderId(null);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -49,10 +89,15 @@ export default function OrdersPage() {
         return 'bg-orange-500';
       case 'READY_FOR_PICKUP':
         return 'bg-green-500';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-cyan-500';
+      case 'DELIVERED':
       case 'COMPLETED':
         return 'bg-gray-500';
       case 'CANCELLED':
         return 'bg-red-500';
+      case 'REFUNDED':
+        return 'bg-purple-500';
       default:
         return 'bg-gray-500';
     }
@@ -68,10 +113,15 @@ export default function OrdersPage() {
         return 'Готовится';
       case 'READY_FOR_PICKUP':
         return 'Готов';
+      case 'OUT_FOR_DELIVERY':
+        return 'В пути';
+      case 'DELIVERED':
       case 'COMPLETED':
         return 'Завершён';
       case 'CANCELLED':
         return 'Отменён';
+      case 'REFUNDED':
+        return 'Возврат';
       default:
         return status;
     }
@@ -91,6 +141,12 @@ export default function OrdersPage() {
 
       {/* Orders List */}
       <div className="px-4 mt-6">
+        {cancelError && (
+          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 font-inter">
+            {cancelError}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -159,6 +215,26 @@ export default function OrdersPage() {
                         <p className="text-sm font-bold text-black font-inter">
                           {(order.totalAmount || order.total || 0).toLocaleString()} ₸
                         </p>
+                        {canCancelOrder(order.status) && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelOrder(order)}
+                            disabled={isCancellingOrderId === order.id}
+                            className="mt-2 inline-flex items-center justify-end gap-1 text-xs font-semibold text-red-600 transition-colors hover:text-red-700 disabled:cursor-not-allowed disabled:text-red-300"
+                          >
+                            {isCancellingOrderId === order.id ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Отмена...
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3" />
+                                Отменить
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -134,7 +134,7 @@ export interface Order {
   storeLogo?: string;
   storePhone?: string;
   orderNumber: string;
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY_FOR_PICKUP' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY_FOR_PICKUP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
   paymentMethod?: string;
   paymentStatus?: string;
   totalAmount?: number;
@@ -531,6 +531,29 @@ class ApiClient {
 
   async getOrderById(id: number): Promise<Order> {
     return this.makeRequest<Order>(`/orders/${id}`);
+  }
+
+  async cancelOrder(id: number): Promise<Order> {
+    if (!this.token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await this.makeRequest<Order>(`/orders/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify('CANCELLED'),
+    });
+
+    return {
+      ...response,
+      orderItems: Array.isArray(response.orderItems)
+        ? response.orderItems
+        : Array.isArray(response.items)
+          ? response.items
+          : [],
+      totalAmount: response.totalAmount || response.total || 0,
+      storeName: response.storeName || 'Unknown Store',
+      notes: response.notes || response.deliveryNotes || ''
+    };
   }
 
   // Mini App specific method for creating reservations
