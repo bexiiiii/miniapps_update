@@ -1,14 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Minus, Plus } from "lucide-react";
+import { ArrowLeft, CheckCircle, MapPin, Minus, Plus, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useTelegram } from "../../../hooks/useTelegram";
-import { apiClient, Product, Store } from "../../../lib/api";
+import { apiClient, Order, Product, Store } from "../../../lib/api";
+
+type OrderModalState =
+  | { type: "success"; order: Order }
+  | { type: "error"; message: string }
+  | null;
 
 export default function ProductDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const productId = params.id as string;
   const { } = useTelegram(); // Initialize Telegram singleton
   
@@ -17,6 +23,7 @@ export default function ProductDetailsPage() {
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
+  const [orderModal, setOrderModal] = useState<OrderModalState>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,11 +91,6 @@ export default function ProductDetailsPage() {
       }
 
       const order = await apiClient.createReservation(reservationData);
-      
-      // Show success message
-      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-        console.log(`Заказ успешно создан! Номер заказа: ${order.id}`);
-      }
 
       // Update local product state to reflect new stock
       setProduct((prev) => {
@@ -100,20 +102,20 @@ export default function ProductDetailsPage() {
           status: remaining > 0 ? prev.status : 'OUT_OF_STOCK',
         };
       });
-      
+
       // Reset quantity
       setQuantity(1);
-      
-      // Redirect to orders page after a brief delay
-      setTimeout(() => {
-        window.location.href = '/orders';
-      }, 500);
-      
+
+      // Show success modal
+      setOrderModal({ type: "success", order });
+
     } catch (error) {
       console.error('Failed to create reservation:', error);
-      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-        console.error('Ошибка при создании заказа. Попробуйте снова.');
-      }
+      const errMsg =
+        error instanceof Error
+          ? error.message
+          : 'Не удалось оформить заказ. Попробуйте ещё раз.';
+      setOrderModal({ type: "error", message: errMsg });
     } finally {
       setIsReserving(false);
     }
@@ -308,6 +310,99 @@ export default function ProductDetailsPage() {
           </button>
         </div>
       </div>
+
+      {/* Order Result Modal */}
+      {orderModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 pb-6"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && orderModal.type === "error") {
+              setOrderModal(null);
+            }
+          }}
+        >
+          <div className="w-full bg-white rounded-3xl p-6 shadow-2xl" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            {orderModal.type === "success" ? (
+              <>
+                {/* Success icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="w-20 h-20 bg-[#73be61]/10 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-10 h-10 text-[#73be61]" />
+                  </div>
+                </div>
+
+                <h2 className="text-2xl font-bold text-black text-center font-inter mb-2">
+                  Заказ оформлен!
+                </h2>
+
+                <p className="text-base text-black/60 text-center font-inter mb-1">
+                  Номер заказа: <span className="font-semibold text-black">#{orderModal.order.orderNumber || orderModal.order.id}</span>
+                </p>
+
+                {/* Bot info block */}
+                <div className="mt-4 bg-[#73be61]/10 rounded-2xl p-4">
+                  <p className="text-sm text-black/70 font-inter text-center leading-relaxed">
+                    📱 Детали заказа и обновления статуса{"\n"}появятся в чате с ботом{" "}
+                    <span className="font-semibold text-[#4a9e38]">FoodSave</span>.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-5 flex flex-col gap-3">
+                  <button
+                    onClick={() => router.push('/orders')}
+                    className="w-full bg-[#73be61] rounded-xl h-12 flex items-center justify-center hover:bg-[#68a556] active:scale-95 transition-all"
+                  >
+                    <span className="text-base font-semibold text-white font-inter">Мои заказы</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOrderModal(null);
+                      router.push('/');
+                    }}
+                    className="w-full bg-gray-100 rounded-xl h-12 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
+                  >
+                    <span className="text-base font-medium text-black font-inter">На главную</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Error icon */}
+                <div className="flex justify-center mb-4">
+                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
+                    <XCircle className="w-10 h-10 text-red-500" />
+                  </div>
+                </div>
+
+                <h2 className="text-2xl font-bold text-black text-center font-inter mb-2">
+                  Ошибка
+                </h2>
+
+                <p className="text-base text-black/60 text-center font-inter">
+                  {orderModal.message}
+                </p>
+
+                {/* Actions */}
+                <div className="mt-5 flex flex-col gap-3">
+                  <button
+                    onClick={() => setOrderModal(null)}
+                    className="w-full bg-[#73be61] rounded-xl h-12 flex items-center justify-center hover:bg-[#68a556] active:scale-95 transition-all"
+                  >
+                    <span className="text-base font-semibold text-white font-inter">Попробовать снова</span>
+                  </button>
+                  <button
+                    onClick={() => router.push('/')}
+                    className="w-full bg-gray-100 rounded-xl h-12 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
+                  >
+                    <span className="text-base font-medium text-black font-inter">На главную</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

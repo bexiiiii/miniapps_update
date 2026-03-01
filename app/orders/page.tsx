@@ -15,19 +15,39 @@ export default function OrdersPage() {
   const [isCancellingOrderId, setIsCancellingOrderId] = useState<number | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
+  const loadOrders = async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
+    try {
+      const ordersData = await apiClient.getMyOrders();
+      setOrders(ordersData);
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        const ordersData = await apiClient.getMyOrders();
-        setOrders(ordersData);
-      } catch (error) {
-        console.error('Failed to load orders:', error);
-      } finally {
-        setIsLoading(false);
+    loadOrders();
+
+    // Re-fetch when the tab becomes visible again (e.g. after placing an order)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadOrders(false);
       }
     };
 
-    loadOrders();
+    // Re-fetch when the window regains focus
+    const handleFocus = () => loadOrders(false);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cancellableStatuses: Order["status"][] = ["PENDING", "CONFIRMED", "PREPARING", "READY_FOR_PICKUP"];

@@ -241,6 +241,7 @@ class ApiClient {
     const config: RequestInit = {
       ...options,
       headers,
+      cache: 'no-store',
     };
 
     const requestPromise = (async () => {
@@ -507,7 +508,12 @@ class ApiClient {
       if (!this.token) {
         throw new Error('Authentication required');
       }
-      const response = await this.makeRequest<Order[]>('/orders/my-orders');
+      const response = await this.makeRequest<Order[]>('/orders/my-orders', {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
       
       // Ensure response is an array and normalize the data
       if (!Array.isArray(response)) {
