@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle, MapPin, Minus, Plus, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, MapPin, Minus, Plus, Phone, Truck, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useTelegram } from "../../../hooks/useTelegram";
@@ -17,13 +17,18 @@ export default function ProductDetailsPage() {
   const router = useRouter();
   const productId = params.id as string;
   const { } = useTelegram(); // Initialize Telegram singleton
-  
+
   const [product, setProduct] = useState<Product | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isReserving, setIsReserving] = useState(false);
   const [orderModal, setOrderModal] = useState<OrderModalState>(null);
+
+  // Phone modal state
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -64,35 +69,30 @@ export default function ProductDetailsPage() {
     };
   }, [productId]);
 
-  const handleReserve = async () => {
-    if (!product) {
-      return;
-    }
+  const handleReserve = async (deliveryType: 'PICKUP' | 'COURIER' = 'PICKUP', contactPhone?: string) => {
+    if (!product) return;
 
     if (product.status !== 'AVAILABLE' || product.stockQuantity === 0) {
       console.error('Product unavailable');
       return;
     }
 
-    if (isReserving) {
-      return; // Prevent multiple simultaneous reservations
-    }
+    if (isReserving) return;
 
     setIsReserving(true);
     try {
       const reservationData = {
         productId: product.id,
         quantity: quantity,
-        note: `Забронировано через Telegram. Количество: ${quantity}`
+        note: deliveryType === 'COURIER'
+          ? `Доставка курьером. Количество: ${quantity}`
+          : `Забронировано через Telegram. Количество: ${quantity}`,
+        deliveryType,
+        contactPhone,
       };
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Creating reservation with data:', reservationData);
-      }
 
       const order = await apiClient.createReservation(reservationData);
 
-      // Update local product state to reflect new stock
       setProduct((prev) => {
         if (!prev) return prev;
         const remaining = Math.max(prev.stockQuantity - quantity, 0);
@@ -103,10 +103,7 @@ export default function ProductDetailsPage() {
         };
       });
 
-      // Reset quantity
       setQuantity(1);
-
-      // Show success modal
       setOrderModal({ type: "success", order });
 
     } catch (error) {
@@ -119,6 +116,23 @@ export default function ProductDetailsPage() {
     } finally {
       setIsReserving(false);
     }
+  };
+
+  const handleCourierClick = () => {
+    if (!product || product.stockQuantity <= 0) return;
+    setPhoneNumber("");
+    setPhoneError("");
+    setShowPhoneModal(true);
+  };
+
+  const handlePhoneSubmit = () => {
+    const cleaned = phoneNumber.replace(/\s/g, "");
+    if (!cleaned || cleaned.length < 10) {
+      setPhoneError("Введите корректный номер телефона");
+      return;
+    }
+    setShowPhoneModal(false);
+    handleReserve('COURIER', phoneNumber);
   };
 
   const formatPrice = (price: number) => {
@@ -155,7 +169,7 @@ export default function ProductDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-24" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen bg-white pb-36" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Header */}
       <div className="px-4 pt-4 pb-4 border-b border-gray-100">
         <div className="flex items-center gap-4">
@@ -186,7 +200,7 @@ export default function ProductDetailsPage() {
       <div className="px-4 mt-6">
         <div className="bg-gray-100 rounded-2xl h-64 overflow-hidden">
           {product.imageUrl ? (
-            <img 
+            <img
               src={product.imageUrl}
               alt={product.name}
               className="w-full h-full object-cover"
@@ -207,7 +221,7 @@ export default function ProductDetailsPage() {
             {product.description}
           </p>
         )}
-        
+
         {/* Category */}
         {product.categoryName && (
           <div className="mt-4">
@@ -240,7 +254,7 @@ export default function ProductDetailsPage() {
               </p>
             </div>
           </div>
-          
+
           {/* Total for quantity */}
           {quantity > 1 && (
             <div className="mt-4 pt-4 border-t border-white/20">
@@ -276,10 +290,11 @@ export default function ProductDetailsPage() {
 
       {/* Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 bg-white border-t border-gray-100 safe-area-inset-bottom">
+        {/* Row 1: quantity + reserve */}
         <div className="flex gap-3 pt-4">
           {/* Quantity Selector */}
           <div className="bg-gray-100 rounded-xl flex items-center justify-between px-1 h-12 min-w-32">
-            <button 
+            <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
               className="w-10 h-10 flex items-center justify-center text-black hover:bg-gray-200 rounded-lg transition-colors"
               disabled={quantity <= 1}
@@ -289,7 +304,7 @@ export default function ProductDetailsPage() {
             <span className="text-xl font-semibold text-black mx-2 font-inter min-w-8 text-center">
               {quantity}
             </span>
-            <button 
+            <button
               onClick={() => setQuantity(Math.min(product.stockQuantity, quantity + 1))}
               className="w-10 h-10 flex items-center justify-center text-black hover:bg-gray-200 rounded-lg transition-colors"
               disabled={quantity >= product.stockQuantity}
@@ -297,10 +312,10 @@ export default function ProductDetailsPage() {
               <Plus className="w-4 h-4" />
             </button>
           </div>
-          
+
           {/* Reserve Button */}
-          <button 
-            onClick={handleReserve}
+          <button
+            onClick={() => handleReserve('PICKUP')}
             disabled={product.stockQuantity <= 0 || isReserving}
             className="flex-1 bg-[#73be61] rounded-xl h-12 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-[#68a556] transition-colors"
           >
@@ -309,7 +324,85 @@ export default function ProductDetailsPage() {
             </span>
           </button>
         </div>
+
+        {/* Row 2: Courier button */}
+        <div className="mt-3">
+          <button
+            onClick={handleCourierClick}
+            disabled={product.stockQuantity <= 0 || isReserving}
+            className="w-full bg-white border-2 border-[#73be61] rounded-xl h-12 flex items-center justify-center gap-2 disabled:border-gray-300 disabled:cursor-not-allowed hover:bg-[#73be61]/5 active:scale-95 transition-all"
+          >
+            <Truck className="w-5 h-5 text-[#73be61]" />
+            <span className="text-base font-medium text-[#73be61] font-inter">
+              Хочу через курьера
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Phone Number Modal */}
+      {showPhoneModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 pb-6"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPhoneModal(false);
+          }}
+        >
+          <div className="w-full bg-white rounded-3xl p-6 shadow-2xl" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-[#73be61]/10 rounded-full flex items-center justify-center">
+                <Phone className="w-8 h-8 text-[#73be61]" />
+              </div>
+            </div>
+
+            <h2 className="text-xl font-bold text-black text-center font-inter mb-1">
+              Доставка курьером
+            </h2>
+            <p className="text-sm text-black/50 text-center font-inter mb-5">
+              Введите номер телефона для связи с курьером
+            </p>
+
+            {/* Phone Input */}
+            <div className="mb-4">
+              <input
+                type="tel"
+                placeholder="+7 777 123 45 67"
+                value={phoneNumber}
+                onChange={(e) => {
+                  setPhoneNumber(e.target.value);
+                  setPhoneError("");
+                }}
+                className="w-full h-12 px-4 rounded-xl border-2 border-gray-200 focus:border-[#73be61] outline-none text-base font-inter text-black transition-colors"
+                autoFocus
+              />
+              {phoneError && (
+                <p className="text-red-500 text-sm font-inter mt-1 pl-1">{phoneError}</p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handlePhoneSubmit}
+                disabled={isReserving}
+                className="w-full bg-[#73be61] rounded-xl h-12 flex items-center justify-center gap-2 hover:bg-[#68a556] active:scale-95 transition-all disabled:bg-gray-300"
+              >
+                <Truck className="w-5 h-5 text-white" />
+                <span className="text-base font-semibold text-white font-inter">
+                  {isReserving ? 'Бронирование...' : 'Забронировать с доставкой'}
+                </span>
+              </button>
+              <button
+                onClick={() => setShowPhoneModal(false)}
+                className="w-full bg-gray-100 rounded-xl h-12 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
+              >
+                <span className="text-base font-medium text-black font-inter">Отмена</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Order Result Modal */}
       {orderModal && (

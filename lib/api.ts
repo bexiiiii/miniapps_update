@@ -567,11 +567,15 @@ class ApiClient {
     productId: number;
     quantity: number;
     note?: string;
+    deliveryType?: 'PICKUP' | 'COURIER';
+    contactPhone?: string;
   }): Promise<Order> {
     const reservationData = {
       productId: orderData.productId,
       quantity: orderData.quantity,
-      note: orderData.note || 'Забронировано через мини-приложение Telegram'
+      note: orderData.note || 'Забронировано через мини-приложение Telegram',
+      deliveryType: orderData.deliveryType || 'PICKUP',
+      contactPhone: orderData.contactPhone,
     };
     
     if (process.env.NODE_ENV === 'development') {
