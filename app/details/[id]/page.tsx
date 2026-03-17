@@ -126,13 +126,12 @@ export default function ProductDetailsPage() {
   };
 
   const handlePhoneSubmit = () => {
-    const cleaned = phoneNumber.replace(/\s/g, "");
-    if (!cleaned || cleaned.length < 10) {
-      setPhoneError("Введите корректный номер телефона");
+    if (!phoneNumber.trim()) {
+      setPhoneError("Это поле обязательно");
       return;
     }
     setShowPhoneModal(false);
-    handleReserve('COURIER', phoneNumber);
+    handleReserve('COURIER', phoneNumber.trim());
   };
 
   const formatPrice = (price: number) => {
@@ -207,7 +206,7 @@ export default function ProductDetailsPage() {
             />
           ) : (
             <div className="w-full h-full bg-[#73be61] flex items-center justify-center">
-              <span className="text-white text-4xl">🍽️</span>
+              <span className="text-white text-4xl font-bold">FS</span>
             </div>
           )}
         </div>
@@ -271,7 +270,7 @@ export default function ProductDetailsPage() {
         <div className="px-4 mt-4">
           <div className="bg-orange-100 border border-orange-200 rounded-xl p-3">
             <p className="text-orange-800 text-sm font-inter">
-              ⚠️ Осталось всего {product.stockQuantity} шт.
+              Осталось всего {product.stockQuantity} шт.
             </p>
           </div>
         </div>
@@ -282,7 +281,7 @@ export default function ProductDetailsPage() {
         <div className="px-4 mt-4">
           <div className="bg-red-100 border border-red-200 rounded-xl p-3">
             <p className="text-red-800 text-sm font-inter">
-              ❌ Товара нет в наличии
+              Товара нет в наличии
             </p>
           </div>
         </div>
@@ -360,7 +359,7 @@ export default function ProductDetailsPage() {
               Доставка курьером
             </h2>
             <p className="text-sm text-black/50 text-center font-inter mb-5">
-              Введите номер телефона для связи с курьером
+              С вами свяжется администратор по поводу этого заказа
             </p>
 
             {/* Phone Input */}
@@ -435,7 +434,7 @@ export default function ProductDetailsPage() {
                 {/* Bot info block */}
                 <div className="mt-4 bg-[#73be61]/10 rounded-2xl p-4">
                   <p className="text-sm text-black/70 font-inter text-center leading-relaxed">
-                    📱 Детали заказа и обновления статуса{"\n"}появятся в чате с ботом{" "}
+                    Детали заказа и обновления статуса{"\n"}появятся в чате с ботом{" "}
                     <span className="font-semibold text-[#4a9e38]">FoodSave</span>.
                   </p>
                 </div>

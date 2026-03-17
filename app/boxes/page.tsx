@@ -129,7 +129,7 @@ function BoxesContent() {
                     />
                   ) : (
                     <div className="w-full h-full bg-[#73be61] rounded-xl flex items-center justify-center">
-                      <span className="text-white text-2xl font-inter">🍽️</span>
+                      <span className="text-white text-xl font-bold font-inter">FS</span>
                     </div>
                   )}
                   
