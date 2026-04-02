@@ -92,7 +92,10 @@ function BoxesContent() {
             <h2 className="text-xl font-bold text-black font-inter">{store.name}</h2>
             <div className="flex items-center gap-2 text-sm text-black/60 font-inter">
               <Clock className="w-4 h-4" />
-              <span>{formatOpeningHours(store.openingHours)}</span>
+              <span>
+                {formatOpeningHours(store.openingHours)}
+                {store.closingHours ? ` — ${store.closingHours}` : ""}
+              </span>
             </div>
           </div>
         </div>
