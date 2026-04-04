@@ -9,10 +9,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Disable experimental features that might cause issues
-  experimental: {
-    // Disable turbopack for production builds
-  },
+  transpilePackages: ['maplibre-gl'],
+  experimental: {},
 };
 
 export default nextConfig;
